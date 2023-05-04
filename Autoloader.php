@@ -47,18 +47,33 @@ class Autoloader
     protected array $files = [];
 
     /**
-     * Sauvegarde la liste des helpers.
-     * Toujours charger le helper URL car il est utilisee par plusieurs applications.
+     * Constructor.
      *
-     * @var string[]
-     * @phpstan-var list<string>
+     * @param array $config
+     * @param string[] $helpers Sauvegarde la liste des helpers.
      */
-    protected array $helpers = [];
+    public function __construct(protected array $config = [], protected array $helpers = [])
+    {
+    }
+
+    public function setConfig(array $config): self 
+    {
+        $this->config = $config;
+
+        return $this;
+    }
+
+    public function setHelpers(array $helpers): self 
+    {
+        $this->helpers = $helpers;
+
+        return $this;
+    }
 
     /**
      * Lit dans le tableau de configuration et garde les parties valides dont on a besoin.
      */
-    public function initialize(array $config = []): self
+    public function initialize(): self
     {
         $this->prefixes = [];
         $this->classmap = [];
@@ -67,7 +82,7 @@ class Autoloader
             'psr4'     => [],
             'classmap' => [],
             'files'    => [],
-        ], $config);
+        ], $this->config);
 
         // Nous devons avoir au moins un, au cas contraire,
         // on leve une exception pour forcer le programmeur a renseigner.
@@ -400,5 +415,4 @@ class Autoloader
 
         return $path;
     }
-
 }

@@ -102,40 +102,6 @@ class Locator
     }
 
     /**
-     * Retourne les namespace mappees qu'on connait
-     *
-     * @return array<int, array<string, string>>
-     */
-    protected function getNamespaces(): array
-    {
-        $namespaces = [];
-
-        $system = [];
-
-        foreach ($this->autoloader->getNamespace() as $prefix => $paths) {
-            foreach ($paths as $path) {
-                if ($prefix === 'BlitzPHP') {
-                    $system = [
-                        'prefix' => $prefix,
-                        'path'   => rtrim($path, '\\/') . DIRECTORY_SEPARATOR,
-                    ];
-
-                    continue;
-                }
-
-                $namespaces[] = [
-                    'prefix' => $prefix,
-                    'path'   => rtrim($path, '\\/') . DIRECTORY_SEPARATOR,
-                ];
-            }
-        }
-
-        $namespaces[] = $system;
-
-        return $namespaces;
-    }
-
-    /**
      * Examine une fichier et retourne le FQCN.
      */
     public function getClassname(string $file): string
@@ -176,5 +142,98 @@ class Locator
         }
 
         return $namespace . '\\' . $className;
+    }
+
+    /**
+     * Recherche dans tous les espaces de noms définis à la recherche d'un fichier.
+     * Renvoie un tableau de tous les emplacements trouvés pour le fichier défini.
+     *
+     * Exemple:
+     *
+     *  $locator->search('Config/Routes.php');
+     *  // Assuming PSR4 namespaces include foo and bar, might return:
+     *  [
+     *      'app/Modules/foo/Config/Routes.php',
+     *      'app/Modules/bar/Config/Routes.php',
+     *  ]
+     */
+    public function search(string $path, string $ext = 'php', bool $prioritizeApp = true): array
+    {
+        $path = $this->ensureExt($path, $ext);
+
+        $foundPaths = [];
+        $appPaths   = [];
+
+        foreach ($this->getNamespaces() as $namespace) {
+            if (isset($namespace['path']) && is_file($namespace['path'] . $path)) {
+                $fullPath = $namespace['path'] . $path;
+                $fullPath = realpath($fullPath) ?: $fullPath;
+
+                if ($prioritizeApp) {
+                    $foundPaths[] = $fullPath;
+                } elseif (defined('APP_PATH') && strpos($fullPath, constant('APP_PATH')) === 0) {
+                    $appPaths[] = $fullPath;
+                } else {
+                    $foundPaths[] = $fullPath;
+                }
+            }
+        }
+
+        if (! $prioritizeApp && ! empty($appPaths)) {
+            $foundPaths = [...$foundPaths, ...$appPaths];
+        }
+
+        // Supprimer tous les doublons
+        return array_unique($foundPaths);
+    }
+
+    /**
+     * Retourne les namespace mappees qu'on connait
+     *
+     * @return array<int, array<string, string>>
+     */
+    protected function getNamespaces(): array
+    {
+        $namespaces = [];
+
+        $system = [];
+
+        foreach ($this->autoloader->getNamespace() as $prefix => $paths) {
+            foreach ($paths as $path) {
+                if ($prefix === 'BlitzPHP') {
+                    $system = [
+                        'prefix' => $prefix,
+                        'path'   => rtrim($path, '\\/') . DIRECTORY_SEPARATOR,
+                    ];
+
+                    continue;
+                }
+
+                $namespaces[] = [
+                    'prefix' => $prefix,
+                    'path'   => rtrim($path, '\\/') . DIRECTORY_SEPARATOR,
+                ];
+            }
+        }
+
+        $namespaces[] = $system;
+
+        return $namespaces;
+    }
+
+    /**
+     * Garantit qu'une extension se trouve à la fin d'un nom de fichier
+     */
+    protected function ensureExt(string $path, string $ext): string
+    {
+        if ($ext) {
+            $ext = '.' . $ext;
+
+            if (substr($path, -strlen($ext)) !== $ext) {
+                $path .= $ext;
+            }
+        }
+
+        return $path;
     }
 }

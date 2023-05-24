@@ -36,6 +36,85 @@ class Locator
         return $this;
     }
 
+    
+
+    /**
+     * Tente de localiser un fichier en examinant le nom d'un espace de noms
+     * et en parcourant les fichiers d'espace de noms PSR-4 que nous connaissons.
+     *
+     * @param string      $file   Le fichier d'espace de noms à localiser
+     * @param string|null $folder Le dossier dans l'espace de noms où nous devons rechercher le fichier.
+     * @param string $ext L'extension de fichier que le fichier doit avoir.
+     *
+     * @return false|string Le chemin d'accès au fichier, ou false s'il n'est pas trouvé.
+     */
+    public function locateFile(string $file, ?string $folder = null, string $ext = 'php')
+    {
+        $file = $this->ensureExt($file, $ext);
+
+        // Efface le nom du dossier s'il se trouve au début du nom de fichier
+        if (! empty($folder) && strpos($file, $folder) === 0) {
+            $file = substr($file, strlen($folder . '/'));
+        }
+
+        // N'est-il pas namespaced ? Essayez le dossier d'application.
+        if (strpos($file, '\\') === false) {
+            return $this->legacyLocate($file, $folder);
+        }
+
+        // Standardize slashes to handle nested directories.
+        $file = strtr($file, '/', '\\');
+        $file = ltrim($file, '\\');
+
+        $segments = explode('\\', $file);
+
+        // Le premier segment sera vide si une barre oblique commence le nom du fichier.
+        if (empty($segments[0])) {
+            unset($segments[0]);
+        }
+
+        $paths    = [];
+        $filename = '';
+
+        // Les espaces de noms sont toujours accompagnés de tableaux de chemins
+        $namespaces = $this->autoloader->getNamespace();
+
+        foreach (array_keys($namespaces) as $namespace) {
+            if (substr($file, 0, strlen($namespace) + 1) === $namespace . '\\') {
+                $fileWithoutNamespace = substr($file, strlen($namespace));
+
+                // Il peut y avoir des sous-espaces de noms du même fournisseur,
+                // donc écrasez-les avec des espaces de noms trouvés plus tard.
+                $paths    = $namespaces[$namespace];
+                $filename = ltrim(str_replace('\\', '/', $fileWithoutNamespace), '/');
+            }
+        }
+
+        // si aucun espace de noms ne correspond, quittez
+        if (empty($paths)) {
+            return false;
+        }
+
+        // Vérifier chaque chemin dans l'espace de noms
+        foreach ($paths as $path) {
+            // Assurez-vous que la barre oblique finale
+            $path = rtrim($path, '/') . '/';
+
+            // Si nous avons un nom de dossier, la fonction appelante s'attend à ce que ce fichier se trouve 
+            // dans ce dossier, comme "Views" ou "Librairies".
+            if (! empty($folder) && strpos($path . $filename, '/' . $folder . '/') === false) {
+                $path .= trim($folder, '/') . '/';
+            }
+
+            $path .= $filename;
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * Scane les namespace definis, retourne une liste de tous les fichiers
      * contenant la sous partie specifiee par $path.
@@ -220,6 +299,26 @@ class Locator
 
         return $namespaces;
     }
+
+    /**
+     * Vérifie le dossier de l'application pour voir si le fichier peut être trouvé.
+     * Uniquement pour une utilisation avec des noms de fichiers qui n'incluent PAS d'espacement de noms.
+     *
+     * @return false|string Le chemin d'accès au fichier, ou false s'il n'est pas trouvé.
+     */
+    protected function legacyLocate(string $file, ?string $folder = null)
+    {
+        $path = defined('APP_PATH') ? constant('APP_PATH') : '';
+        $path = $path . (empty($folder) ? $file : $folder . '/' . $file);
+        $path = realpath($path) ?: $path;
+
+        if (is_file($path)) {
+            return $path;
+        }
+
+        return false;
+    }
+
 
     /**
      * Garantit qu'une extension se trouve à la fin d'un nom de fichier

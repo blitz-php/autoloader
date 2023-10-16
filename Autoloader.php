@@ -107,20 +107,16 @@ class Autoloader
         }
 
         if (is_file(self::composerPath())) {
-            $this->loadComposerInfo();
+            $this->loadComposerAutoloader();
         }
 
         return $this;
     }
 
-    private function loadComposerInfo(): void
+    private function loadComposerAutoloader(): void
     {
-        /**
-         * @var ClassLoader $composer
-         */
+        /** @var ClassLoader $composer */
         $composer = include self::composerPath();
-
-        $this->loadComposerClassmap($composer);
 
         // @phpstan-ignore-next-line
         $this->loadComposerNamespaces($composer);
@@ -133,16 +129,27 @@ class Autoloader
      */
     public function register()
     {
-        // Ajoute l'autoloader PSR4 pour un maximum de performance.
-        spl_autoload_register([$this, 'loadClass'], true, true);
+        // Enregistre l'autoloader pour les fichiers de notre classmap.
+        spl_autoload_register([$this, 'loadClassmap'], true);
 
-        // Maintenant ajoute un autre autoloader pour les fichier de notre class map.
-        spl_autoload_register([$this, 'loadClassmap'], true, true);
+        // Ajoute l'autoloader PSR4.
+        spl_autoload_register([$this, 'loadClass'], true);
 
         // Charge les fichiers non-class
         foreach ($this->files as $file) {
             $this->includeFile($file);
         }
+    }
+
+    /**
+     * Désenregistrer le chargeur automatique.
+     *
+     * @internal Cette méthode est destinée aux tests.
+     */
+    public function unregister(): void
+    {
+        spl_autoload_unregister([$this, 'loadClass']);
+        spl_autoload_unregister([$this, 'loadClassmap']);
     }
 
     /**
@@ -219,16 +226,13 @@ class Autoloader
     /**
      * Charge un fichier a partir du non de classe fourni.
      *
+     * @internal Pour l'utilisation de `spl_autoload_register`.
+     * 
      * @param string $class Le nom complet (FQCN) de la calsse.
-     *
-     * @return false|string Le fichier correspondant en cas de succes, ou false en cas d'echec.
      */
-    public function loadClass(string $class)
+    public function loadClass(string $class): void
     {
-        $class = trim($class, '\\');
-        $class = str_ireplace('.php', '', $class);
-
-        return $this->loadInNamespace($class);
+        $this->loadInNamespace($class);
     }
 
     /**
@@ -280,8 +284,6 @@ class Autoloader
      */
     protected function includeFile(string $file)
     {
-        $file = $this->sanitizeFilename($file);
-
         if (is_file($file)) {
             include_once $file;
 
@@ -338,6 +340,15 @@ class Autoloader
     {
         $namespacePaths = $composer->getPrefixesPsr4();
 
+        // Get rid of duplicated namespaces.
+        $duplicatedNamespaces = ['BlitzPHP', defined('APP_NAMESPACE') ? constant('APP_NAMESPACE') : ''];
+
+        foreach (array_filter($duplicatedNamespaces) as $ns) {
+            if (isset($namespacePaths[$ns . '\\'])) {
+                unset($namespacePaths[$ns . '\\']);
+            }
+        }
+
         if (! method_exists(InstalledVersions::class, 'getAllRawData')) {
             throw new RuntimeException(
                 'Votre version de Composer est trop ancienne.'
@@ -355,7 +366,7 @@ class Autoloader
         $only    = [];
         $exclude = [];
         if ($only !== [] && $exclude !== []) {
-            throw new LogicException('Impossible d\'utiliser "uniquement" et "exclure" en même temps dans "Config\Modules::$composerPackages".');
+            throw new LogicException('Impossible d\'utiliser "only" et "exclude" en même temps dans "Config\Modules::$composerPackages".');
         }
 
         // Recupere les chemins d'installation des packages pour ajouter les namespace pour la decouverte auto.
@@ -395,13 +406,6 @@ class Autoloader
         }
 
         $this->addNamespace($newPaths);
-    }
-
-    private function loadComposerClassmap(ClassLoader $composer): void
-    {
-        $classes = $composer->getClassMap();
-
-        $this->classmap = array_merge($this->classmap, $classes);
     }
 
     private static function composerPath(): string

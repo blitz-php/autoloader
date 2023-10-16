@@ -17,7 +17,7 @@ namespace BlitzPHP\Autoloader;
  *
  * @credit 		<a href="https://codeigniter.com">CodeIgniter4 - CodeIgniter\Autoloader\FileLocator</a>
  */
-class Locator
+class Locator implements LocatorInterface
 {
     /**
      * Autoloader a utiliser.

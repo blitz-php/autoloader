@@ -78,10 +78,8 @@ class Locator
 
         // Les espaces de noms sont toujours accompagnés de tableaux de chemins
         $namespaces = $this->autoloader->getNamespace();
-        $keys = array_keys($namespaces);
-        sort($keys);
         
-        foreach ($keys as $namespace) {
+        foreach (array_keys($namespaces) as $namespace) {
             if (substr($file, 0, strlen($namespace) + 1) === $namespace . '\\') {
                 $fileWithoutNamespace = substr($file, strlen($namespace));
                 
@@ -223,6 +221,50 @@ class Locator
         }
 
         return $namespace . '\\' . $className;
+    }
+
+    /**
+     * Recherchez le nom qualifié d'un fichier en fonction de l'espace de noms du premier chemin d'espace de noms correspondant.
+     *
+     * @return false|string Le nom qualifié ou false si le chemin n'est pas trouvé
+     */
+    public function findQualifiedNameFromPath(string $path)
+    {
+        $path = realpath($path) ?: $path;
+
+        if (! is_file($path)) {
+            return false;
+        }
+
+        foreach ($this->getNamespaces() as $namespace) {
+            $namespace['path'] = realpath($namespace['path']) ?: $namespace['path'];
+
+            if (empty($namespace['path'])) {
+                continue;
+            }
+
+            if (mb_strpos($path, $namespace['path']) === 0) {
+                $className = $namespace['prefix'] . '\\' .
+                    ltrim(
+                        str_replace(
+                            '/',
+                            '\\',
+                            mb_substr($path, mb_strlen($namespace['path']))
+                        ),
+                        '\\'
+                    );
+
+                // Retirons l'extension du fichier (.php)
+                $className = mb_substr($className, 0, -4);
+
+                // Verifions si la classe existe
+                if (class_exists($className)) {
+                    return $className;
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

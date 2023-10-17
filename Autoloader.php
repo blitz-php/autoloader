@@ -118,11 +118,13 @@ class Autoloader
         /** @var ClassLoader $composer */
         $composer = include self::composerPath();
 
+        $composer_config = $this->config['composer'] ?? [];
+
         // Devrions-nous également charger via les namspaces de Composer ?
         // Est en principe utilisé uniquement pour les tests
-        if (true === ($this->config['use_composer'] ?? true) ) {
+        if (true === ($composer_config['discover'] ?? true)) {
             // @phpstan-ignore-next-line
-            $this->loadComposerNamespaces($composer);
+            $this->loadComposerNamespaces($composer, $composer_config['packages'] ?? []);
         }
 
         unset($composer);
@@ -340,7 +342,7 @@ class Autoloader
         return $cleanFilename;
     }
 
-    private function loadComposerNamespaces(ClassLoader $composer): void
+    private function loadComposerNamespaces(ClassLoader $composer, array $composerPackages): void
     {
         $namespacePaths = $composer->getPrefixesPsr4();
 
@@ -358,10 +360,10 @@ class Autoloader
             $packageList = array_merge($packageList, $list['versions']);
         }
 
-        $only    = [];
-        $exclude = [];
+        $only    = $composerPackages['only'] ?? [];
+        $exclude = $composerPackages['exclude'] ?? [];
         if ($only !== [] && $exclude !== []) {
-            throw new LogicException('Impossible d\'utiliser "only" et "exclude" en même temps dans "Config\Modules::$composerPackages".');
+            throw new LogicException('Impossible d\'utiliser "only" et "exclude" en même temps dans "Config\autoload::composer>packages".');
         }
 
         // Recupere les chemins d'installation des packages pour ajouter les namespace pour la decouverte auto.

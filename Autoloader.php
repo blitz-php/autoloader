@@ -118,8 +118,12 @@ class Autoloader
         /** @var ClassLoader $composer */
         $composer = include self::composerPath();
 
-        // @phpstan-ignore-next-line
-        $this->loadComposerNamespaces($composer);
+        // Devrions-nous également charger via les namspaces de Composer ?
+        // Est en principe utilisé uniquement pour les tests
+        if (true === ($this->config['use_composer'] ?? true) ) {
+            // @phpstan-ignore-next-line
+            $this->loadComposerNamespaces($composer);
+        }
 
         unset($composer);
     }

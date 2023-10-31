@@ -36,15 +36,13 @@ class Locator implements LocatorInterface
         return $this;
     }
 
-    
-
     /**
      * Tente de localiser un fichier en examinant le nom d'un espace de noms
      * et en parcourant les fichiers d'espace de noms PSR-4 que nous connaissons.
      *
      * @param string      $file   Le fichier d'espace de noms à localiser
      * @param string|null $folder Le dossier dans l'espace de noms où nous devons rechercher le fichier.
-     * @param string $ext L'extension de fichier que le fichier doit avoir.
+     * @param string      $ext    L'extension de fichier que le fichier doit avoir.
      *
      * @return false|string Le chemin d'accès au fichier, ou false s'il n'est pas trouvé.
      */
@@ -53,12 +51,12 @@ class Locator implements LocatorInterface
         $file = $this->ensureExt($file, $ext);
 
         // Efface le nom du dossier s'il se trouve au début du nom de fichier
-        if (! empty($folder) && strpos($file, $folder) === 0) {
+        if (! empty($folder) && str_starts_with($file, $folder)) {
             $file = substr($file, strlen($folder . '/'));
         }
-        
-        // N'est-il pas namespaced ? Essayez le dossier d'application.
-        if (strpos($file, '\\') === false) {
+
+        // N'est-il pas namespaced ? Essayez le dossier d'application.
+        if (! str_contains($file, '\\')) {
             return $this->legacyLocate($file, $folder);
         }
 
@@ -67,51 +65,51 @@ class Locator implements LocatorInterface
         $file = ltrim($file, '\\');
 
         $segments = explode('\\', $file);
-        
+
         // Le premier segment sera vide si une barre oblique commence le nom du fichier.
         if (empty($segments[0])) {
             unset($segments[0]);
         }
-        
+
         $paths    = [];
         $filename = '';
 
         // Les espaces de noms sont toujours accompagnés de tableaux de chemins
         $namespaces = $this->autoloader->getNamespace();
-        
+
         foreach (array_keys($namespaces) as $namespace) {
             if (substr($file, 0, strlen($namespace) + 1) === $namespace . '\\') {
                 $fileWithoutNamespace = substr($file, strlen($namespace));
-                
+
                 // Il peut y avoir des sous-espaces de noms du même fournisseur,
                 // donc écrasez-les avec des espaces de noms trouvés plus tard.
                 $paths    = $namespaces[$namespace];
                 $filename = ltrim(str_replace('\\', '/', $fileWithoutNamespace), '/');
             }
         }
-        
+
         // si aucun espace de noms ne correspond, quittez
         if (empty($paths)) {
             return false;
         }
-        
+
         // Vérifier chaque chemin dans l'espace de noms
         foreach ($paths as $path) {
             // Assurez-vous que la barre oblique finale
             $path = rtrim($path, '/') . '/';
-            
-            // Si nous avons un nom de dossier, la fonction appelante s'attend à ce que ce fichier se trouve 
+
+            // Si nous avons un nom de dossier, la fonction appelante s'attend à ce que ce fichier se trouve
             // dans ce dossier, comme "Views" ou "Librairies".
-            if (! empty($folder) && strpos($path . $filename, '/' . $folder . '/') === false) {
+            if (! empty($folder) && ! str_contains($path . $filename, '/' . $folder . '/')) {
                 $path .= trim($folder, '/') . '/';
             }
             $path .= $filename;
-            
+
             if (is_file($path)) {
                 return $path;
             }
         }
-        
+
         return false;
     }
 
@@ -148,7 +146,7 @@ class Locator implements LocatorInterface
     }
 
     /**
-     * Analyse l'espace de noms fourni, renvoyant une liste de tous les fichiers 
+     * Analyse l'espace de noms fourni, renvoyant une liste de tous les fichiers
      * contenus dans le sous-chemin spécifié par $path.
      *
      * @return string[] Liste des chemins des fichiers
@@ -283,7 +281,7 @@ class Locator implements LocatorInterface
     public function search(string $path, string $ext = 'php', bool $prioritizeApp = true): array
     {
         $path = $this->ensureExt($path, $ext);
-        
+
         $foundPaths = [];
         $appPaths   = [];
 
@@ -294,7 +292,7 @@ class Locator implements LocatorInterface
 
                 if ($prioritizeApp) {
                     $foundPaths[] = $fullPath;
-                } elseif (defined('APP_PATH') && strpos($fullPath, constant('APP_PATH')) === 0) {
+                } elseif (defined('APP_PATH') && str_starts_with($fullPath, constant('APP_PATH'))) {
                     $appPaths[] = $fullPath;
                 } else {
                     $foundPaths[] = $fullPath;
@@ -353,7 +351,7 @@ class Locator implements LocatorInterface
     protected function legacyLocate(string $file, ?string $folder = null)
     {
         $path = defined('APP_PATH') ? constant('APP_PATH') : '';
-        $path = $path . (empty($folder) ? $file : $folder . '/' . $file);
+        $path .= (empty($folder) ? $file : $folder . '/' . $file);
         $path = realpath($path) ?: $path;
 
         if (is_file($path)) {
@@ -362,7 +360,6 @@ class Locator implements LocatorInterface
 
         return false;
     }
-
 
     /**
      * Garantit qu'une extension se trouve à la fin d'un nom de fichier

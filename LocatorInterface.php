@@ -23,7 +23,7 @@ interface LocatorInterface
      *
      * @param string      $file   Le fichier d'espace de noms à localiser
      * @param string|null $folder Le dossier dans l'espace de noms où nous devons rechercher le fichier.
-     * @param string $ext L'extension de fichier que le fichier doit avoir.
+     * @param string      $ext    L'extension de fichier que le fichier doit avoir.
      *
      * @return false|string Le chemin d'accès au fichier, ou false s'il n'est pas trouvé.
      */
@@ -65,7 +65,7 @@ interface LocatorInterface
     public function listFiles(string $path): array;
 
     /**
-     * Analyse l'espace de noms fourni, renvoyant une liste de tous les fichiers 
+     * Analyse l'espace de noms fourni, renvoyant une liste de tous les fichiers
      * contenus dans le sous-chemin spécifié par $path.
      *
      * @return string[] Liste des chemins des fichiers

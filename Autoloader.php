@@ -49,21 +49,20 @@ class Autoloader
     /**
      * Constructor.
      *
-     * @param array $config
      * @param string[] $helpers Sauvegarde la liste des helpers.
      */
     public function __construct(protected array $config = [], protected array $helpers = [])
     {
     }
 
-    public function setConfig(array $config): self 
+    public function setConfig(array $config): static
     {
         $this->config = $config;
 
         return $this;
     }
 
-    public function setHelpers(array $helpers): self 
+    public function setHelpers(array $helpers): static
     {
         $this->helpers = $helpers;
 
@@ -73,7 +72,7 @@ class Autoloader
     /**
      * Lit dans le tableau de configuration et garde les parties valides dont on a besoin.
      */
-    public function initialize(): self
+    public function initialize(): static
     {
         $this->prefixes = [];
         $this->classmap = [];
@@ -120,7 +119,7 @@ class Autoloader
 
         $composer_config = $this->config['composer'] ?? [];
 
-        // Devrions-nous également charger via les namspaces de Composer ?
+        // Devrions-nous également charger via les namspaces de Composer ?
         // Est en principe utilisé uniquement pour les tests
         if (true === ($composer_config['discover'] ?? true)) {
             // @phpstan-ignore-next-line
@@ -233,7 +232,7 @@ class Autoloader
      * Charge un fichier a partir du non de classe fourni.
      *
      * @internal Pour l'utilisation de `spl_autoload_register`.
-     * 
+     *
      * @param string $class Le nom complet (FQCN) de la calsse.
      */
     public function loadClass(string $class): void
@@ -260,7 +259,7 @@ class Autoloader
      */
     protected function loadInNamespace(string $class)
     {
-        if (strpos($class, '\\') === false) {
+        if (! str_contains($class, '\\')) {
             return false;
         }
 
@@ -268,7 +267,7 @@ class Autoloader
             foreach ($directories as $directory) {
                 $directory = rtrim($directory, '\\/');
 
-                if (strpos($class, $namespace) === 0) {
+                if (str_starts_with($class, $namespace)) {
                     $filePath = $directory . str_replace('\\', DIRECTORY_SEPARATOR, substr($class, strlen($namespace))) . '.php';
                     $filename = $this->includeFile($filePath);
 
@@ -320,7 +319,7 @@ class Autoloader
             $chars = implode('', $matches[0]);
 
             throw new InvalidArgumentException(
-                'Le chemin du fichier contient des caractères spéciaux "' . $chars . '" qui ne sont pas autorisés : "' . $filename . '"'
+                'Le chemin du fichier contient des caractères spéciaux "' . $chars . "\" qui ne sont pas autorisés\u{a0}: \"" . $filename . '"'
             );
         }
         if ($result === false) {
@@ -336,7 +335,7 @@ class Autoloader
         $cleanFilename = trim($filename, '.-_');
 
         if ($filename !== $cleanFilename) {
-            throw new InvalidArgumentException('Les caractères ".-_" ne sont pas autorisés dans les bords des noms de fichiers : "' . $filename . '"');
+            throw new InvalidArgumentException("Les caractères \".-_\" ne sont pas autorisés dans les bords des noms de fichiers\u{a0}: \"" . $filename . '"');
         }
 
         return $cleanFilename;

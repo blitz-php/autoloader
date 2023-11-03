@@ -76,8 +76,10 @@ class Locator implements LocatorInterface
 
         // Les espaces de noms sont toujours accompagnés de tableaux de chemins
         $namespaces = $this->autoloader->getNamespace();
+        $keys       = array_keys($namespaces);
+        sort($keys);
 
-        foreach (array_keys($namespaces) as $namespace) {
+        foreach ($keys as $namespace) {
             if (substr($file, 0, strlen($namespace) + 1) === $namespace . '\\') {
                 $fileWithoutNamespace = substr($file, strlen($namespace));
 

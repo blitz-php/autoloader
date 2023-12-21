@@ -11,6 +11,8 @@
 
 namespace BlitzPHP\Autoloader;
 
+use BlitzPHP\Contracts\Autoloader\LocatorInterface;
+
 /**
  * Fourni un chargeur pour les fichiers qui ne sont pas des classes dans un namespace.
  * Fonctionne avec les Helpers, Views, etc.

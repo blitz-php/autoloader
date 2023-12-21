@@ -11,6 +11,7 @@
 
 namespace BlitzPHP\Autoloader;
 
+use BlitzPHP\Contracts\Autoloader\LocatorInterface;
 use Psr\SimpleCache\CacheInterface;
 
 /**

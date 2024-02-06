@@ -27,14 +27,14 @@ class Autoloader
     /**
      * Sauvegarde les namespaces comme cle et les chemins correspondants comme valeurs.
      *
-     * @var array<string, array<string>>
+     * @var array<string, string[]>
      */
     protected array $prefixes = [];
 
     /**
      * Sauvegarde les noms de classes comme cle et les chemins correspondants comme valeurs.
      *
-     * @var array<string, string>
+     * @var array<class-string, string>
      */
     protected array $classmap = [];
 
@@ -296,49 +296,6 @@ class Autoloader
         }
 
         return false;
-    }
-
-    /**
-     * Check file path.
-     *
-     * Checks special characters that are illegal in filenames on certain
-     * operating systems and special characters requiring special escaping
-     * to manipulate at the command line. Replaces spaces and consecutive
-     * dashes with a single dash. Trim period, dash and underscore from beginning
-     * and end of filename.
-     */
-    public function sanitizeFilename(string $filename): string
-    {
-        // Only allow characters deemed safe for POSIX portable filenames.
-        // Plus the forward slash for directory separators since this might be a path.
-        // http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_278
-        // Modified to allow backslash and colons for on Windows machines.
-        $result = preg_match_all('/[^0-9\p{L}\s\/\-_.:\\\\]/u', $filename, $matches);
-
-        if ($result > 0) {
-            $chars = implode('', $matches[0]);
-
-            throw new InvalidArgumentException(
-                'Le chemin du fichier contient des caractères spéciaux "' . $chars . "\" qui ne sont pas autorisés\u{a0}: \"" . $filename . '"'
-            );
-        }
-        if ($result === false) {
-            if (version_compare(PHP_VERSION, '8.0.0', '>=')) {
-                $message = preg_last_error_msg();
-            } else {
-                $message = 'Erreur d\'expression régulière. code d\'erreur:' . preg_last_error();
-            }
-
-            throw new RuntimeException($message . '. filename: "' . $filename . '"');
-        }
-
-        $cleanFilename = trim($filename, '.-_');
-
-        if ($filename !== $cleanFilename) {
-            throw new InvalidArgumentException("Les caractères \".-_\" ne sont pas autorisés dans les bords des noms de fichiers\u{a0}: \"" . $filename . '"');
-        }
-
-        return $cleanFilename;
     }
 
     private function loadComposerNamespaces(ClassLoader $composer, array $composerPackages): void

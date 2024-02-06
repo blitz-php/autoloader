@@ -187,6 +187,10 @@ class Locator implements LocatorInterface
      */
     public function getClassname(string $file): string
     {
+        if (is_dir($file)) {
+            return '';
+        }
+        
         $php       = file_get_contents($file);
         $tokens    = token_get_all($php);
         $dlm       = false;
@@ -309,7 +313,7 @@ class Locator implements LocatorInterface
         }
 
         // Supprimer tous les doublons
-        return array_unique($foundPaths);
+        return array_values(array_unique($foundPaths));
     }
 
     /**
@@ -341,9 +345,7 @@ class Locator implements LocatorInterface
             }
         }
 
-        $namespaces[] = $system;
-
-        return $namespaces;
+        return array_merge($namespaces, $system);
     }
 
     /**
@@ -370,7 +372,7 @@ class Locator implements LocatorInterface
      */
     protected function ensureExt(string $path, string $ext): string
     {
-        if ($ext) {
+        if ($ext !== '') {
             $ext = '.' . $ext;
 
             if (substr($path, -strlen($ext)) !== $ext) {

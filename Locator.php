@@ -330,7 +330,7 @@ class Locator implements LocatorInterface
         foreach ($this->autoloader->getNamespace() as $prefix => $paths) {
             foreach ($paths as $path) {
                 if ($prefix === 'BlitzPHP') {
-                    $system = [
+                    $system[] = [
                         'prefix' => $prefix,
                         'path'   => rtrim($path, '\\/') . DIRECTORY_SEPARATOR,
                     ];

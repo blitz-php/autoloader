@@ -42,7 +42,7 @@ final class LocatorCached implements LocatorInterface
     /**
      * Constructor
      */
-    public function __construct(private Locator $locator, private CacheInterface $cacheHandler)
+    public function __construct(private readonly Locator $locator, private CacheInterface $cacheHandler)
     {
         $this->loadCache();
     }
@@ -73,6 +73,7 @@ final class LocatorCached implements LocatorInterface
      */
     public function deleteCache(): void
     {
+        $this->cacheUpdated = false;
         $this->cacheHandler->delete($this->cacheKey);
     }
 

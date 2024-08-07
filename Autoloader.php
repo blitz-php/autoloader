@@ -120,7 +120,6 @@ class Autoloader
         $composer_config = $this->config['composer'] ?? [];
 
         // Devrions-nous également charger via les namspaces de Composer ?
-        // Est en principe utilisé uniquement pour les tests
         if (true === ($composer_config['discover'] ?? true)) {
             // @phpstan-ignore-next-line
             $this->loadComposerNamespaces($composer, $composer_config['packages'] ?? []);
@@ -135,10 +134,10 @@ class Autoloader
     public function register()
     {
         // Enregistre l'autoloader pour les fichiers de notre classmap.
-        spl_autoload_register([$this, 'loadClassmap'], true);
+        spl_autoload_register($this->loadClassmap(...), true);
 
         // Ajoute l'autoloader PSR4.
-        spl_autoload_register([$this, 'loadClass'], true);
+        spl_autoload_register($this->loadClass(...), true);
 
         // Charge les fichiers non-class
         foreach ($this->files as $file) {
@@ -153,15 +152,14 @@ class Autoloader
      */
     public function unregister(): void
     {
-        spl_autoload_unregister([$this, 'loadClass']);
-        spl_autoload_unregister([$this, 'loadClassmap']);
+        spl_autoload_unregister($this->loadClass(...));
+        spl_autoload_unregister($this->loadClassmap(...));
     }
 
     /**
      * Enregistre les namespaces avec l'autoloader.
      *
-     * @param array<string, array<int, string>|string>|string $namespace
-     * @phpstan-param array<string, list<string>|string>|string $namespa
+     * @param array<string, string[]|string>|string $namespace
      */
     public function addNamespace($namespace, ?string $path = null): self
     {
@@ -311,6 +309,7 @@ class Autoloader
                 . ' et supprimez votre répertoire vendor/ et lancez `composer update`.'
             );
         }
+
         $allData     = InstalledVersions::getAllRawData();
         $packageList = [];
 
@@ -347,7 +346,7 @@ class Autoloader
 
             foreach ($srcPaths as $path) {
                 foreach ($installPaths as $installPath) {
-                    if ($installPath === substr($path, 0, strlen($installPath))) {
+                    if (str_starts_with($path, $installPath)) {
                         $add = true;
                         break 2;
                     }

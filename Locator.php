@@ -26,6 +26,13 @@ class Locator implements LocatorInterface
      */
     protected Autoloader $autoloader;
 
+    /**
+     * Liste des noms de classe qui n'existent pas.
+     *
+     * @var list<class-string>
+     */
+    private array $invalidClassnames = [];
+
     public function __construct(Autoloader $autoloader)
     {
         $this->setAutoloader($autoloader);
@@ -69,7 +76,7 @@ class Locator implements LocatorInterface
         $segments = explode('\\', $file);
 
         // Le premier segment sera vide si une barre oblique commence le nom du fichier.
-        if (empty($segments[0])) {
+        if ($segments[0] === '') {
             unset($segments[0]);
         }
 
@@ -93,7 +100,7 @@ class Locator implements LocatorInterface
         }
 
         // si aucun espace de noms ne correspond, quittez
-        if (empty($paths)) {
+        if ($paths === []) {
             return false;
         }
 
@@ -107,8 +114,8 @@ class Locator implements LocatorInterface
             if (! empty($folder) && ! str_contains($path . $filename, '/' . $folder . '/')) {
                 $path .= trim($folder, '/') . '/';
             }
-            $path .= $filename;
 
+            $path .= $filename;
             if (is_file($path)) {
                 return $path;
             }
@@ -125,7 +132,7 @@ class Locator implements LocatorInterface
      */
     public function listFiles(string $path): array
     {
-        if (empty($path)) {
+        if ($path === '') {
             return [];
         }
 
@@ -141,7 +148,7 @@ class Locator implements LocatorInterface
 
             $tempFiles = Helper::getFilenames($fullPath, true, false, false);
 
-            if (! empty($tempFiles)) {
+            if ($tempFiles !== []) {
                 $files = array_merge($files, $tempFiles);
             }
         }
@@ -157,13 +164,13 @@ class Locator implements LocatorInterface
      */
     public function listNamespaceFiles(string $prefix, string $path): array
     {
-        if (empty($path) || empty($prefix)) {
+        if ($path === '' || $prefix === '') {
             return [];
         }
 
         $files = [];
 
-        // autoloader->getNamespace($prefix) returns an array of paths for that namespace
+        // autoloader->getNamespace($prefix) renvoie un tableau de chemins pour cet espace de noms
         foreach ($this->autoloader->getNamespace($prefix) as $namespacePath) {
             $fullPath = rtrim($namespacePath, '/') . '/' . $path;
             $fullPath = realpath($fullPath) ?: $fullPath;
@@ -174,7 +181,7 @@ class Locator implements LocatorInterface
 
             $tempFiles = Helper::getFilenames($fullPath, true, false, false);
 
-            if (! empty($tempFiles)) {
+            if ($tempFiles !== []) {
                 $files = array_merge($files, $tempFiles);
             }
         }
@@ -222,7 +229,7 @@ class Locator implements LocatorInterface
             }
         }
 
-        if (empty($className)) {
+        if ($className === '') {
             return '';
         }
 
@@ -245,7 +252,7 @@ class Locator implements LocatorInterface
         foreach ($this->getNamespaces() as $namespace) {
             $namespace['path'] = realpath($namespace['path']) ?: $namespace['path'];
 
-            if (empty($namespace['path'])) {
+            if ($namespace['path'] === '') {
                 continue;
             }
 
@@ -263,10 +270,17 @@ class Locator implements LocatorInterface
                 // Retirons l'extension du fichier (.php)
                 $className = mb_substr($className, 0, -4);
 
+                if (in_array($className, $this->invalidClassnames, true)) {
+                    continue;
+                }
+
                 // Verifions si la classe existe
                 if (class_exists($className)) {
                     return $className;
                 }
+
+                // Si la classe n'existe pas, il s'agit d'un nom de classe non valide.
+                $this->invalidClassnames[] = $className;
             }
         }
 
@@ -308,7 +322,7 @@ class Locator implements LocatorInterface
             }
         }
 
-        if (! $prioritizeApp && ! empty($appPaths)) {
+        if (! $prioritizeApp && $appPaths !== []) {
             $foundPaths = [...$foundPaths, ...$appPaths];
         }
 
@@ -375,7 +389,7 @@ class Locator implements LocatorInterface
         if ($ext !== '') {
             $ext = '.' . $ext;
 
-            if (substr($path, -strlen($ext)) !== $ext) {
+            if (! str_ends_with($path, $ext)) {
                 $path .= $ext;
             }
         }

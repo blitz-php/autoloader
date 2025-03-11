@@ -153,7 +153,7 @@ class Locator implements LocatorInterface
             }
         }
 
-        return $files;
+        return array_unique($files);
     }
 
     /**

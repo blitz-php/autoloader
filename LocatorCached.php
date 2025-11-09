@@ -115,7 +115,7 @@ final class LocatorCached implements LocatorInterface
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @return list<non-empty-string>
      */
     public function search(string $path, string $ext = 'php', bool $prioritizeApp = true): array

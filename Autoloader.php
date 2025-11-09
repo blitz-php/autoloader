@@ -130,7 +130,7 @@ class Autoloader
     /**
      * Enregistre le chargeur avec la pile SPL autoloader.
      * Dans l'ordre suivant:
-     * 
+     *
      * 1. Chargement via la Classmap
      * 2. Autoloader PSR-4
      * 3. Fichiers non-classe
@@ -218,7 +218,7 @@ class Autoloader
 
     /**
      * Charge une classe en utilisant le classmap disponible.
-     * 
+     *
      * @param class-string $clas Le nom complet (FQCN) de la classe.
      *
      * @return false|string
@@ -252,7 +252,7 @@ class Autoloader
     public function loadHelpers(): void
     {
         if (function_exists('helper')) {
-            call_user_func('helper', $this->helpers);
+            helper($this->helpers);
         }
     }
 

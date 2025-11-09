@@ -51,7 +51,7 @@ class Locator implements LocatorInterface
      *
      * @param non-empty-string      $file   Le fichier d'espace de noms à localiser
      * @param non-empty-string|null $folder Le dossier dans l'espace de noms où nous devons rechercher le fichier.
-     * @param string      $ext    L'extension de fichier que le fichier doit avoir.
+     * @param string                $ext    L'extension de fichier que le fichier doit avoir.
      *
      * @return false|non-empty-string Le chemin d'accès au fichier, ou false s'il n'est pas trouvé.
      */
@@ -197,7 +197,7 @@ class Locator implements LocatorInterface
         if (is_dir($file)) {
             return '';
         }
-        
+
         $php       = file_get_contents($file);
         $tokens    = token_get_all($php);
         $dlm       = false;
@@ -369,7 +369,7 @@ class Locator implements LocatorInterface
      * Uniquement pour une utilisation avec des noms de fichiers qui n'incluent PAS d'espacement de noms.
      *
      * @param non-empty-string|null $folder
-     * 
+     *
      * @return false|string Le chemin d'accès au fichier, ou false s'il n'est pas trouvé.
      */
     protected function legacyLocate(string $file, ?string $folder = null)

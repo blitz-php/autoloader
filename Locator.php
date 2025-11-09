@@ -49,18 +49,18 @@ class Locator implements LocatorInterface
      * Tente de localiser un fichier en examinant le nom d'un espace de noms
      * et en parcourant les fichiers d'espace de noms PSR-4 que nous connaissons.
      *
-     * @param string      $file   Le fichier d'espace de noms à localiser
-     * @param string|null $folder Le dossier dans l'espace de noms où nous devons rechercher le fichier.
+     * @param non-empty-string      $file   Le fichier d'espace de noms à localiser
+     * @param non-empty-string|null $folder Le dossier dans l'espace de noms où nous devons rechercher le fichier.
      * @param string      $ext    L'extension de fichier que le fichier doit avoir.
      *
-     * @return false|string Le chemin d'accès au fichier, ou false s'il n'est pas trouvé.
+     * @return false|non-empty-string Le chemin d'accès au fichier, ou false s'il n'est pas trouvé.
      */
     public function locateFile(string $file, ?string $folder = null, string $ext = 'php')
     {
         $file = $this->ensureExt($file, $ext);
 
         // Efface le nom du dossier s'il se trouve au début du nom de fichier
-        if (! empty($folder) && str_starts_with($file, $folder)) {
+        if ($folder !== null && str_starts_with($file, $folder)) {
             $file = substr($file, strlen($folder . '/'));
         }
 
@@ -111,7 +111,7 @@ class Locator implements LocatorInterface
 
             // Si nous avons un nom de dossier, la fonction appelante s'attend à ce que ce fichier se trouve
             // dans ce dossier, comme "Views" ou "Librairies".
-            if (! empty($folder) && ! str_contains($path . $filename, '/' . $folder . '/')) {
+            if ($folder !== null && ! str_contains($path . $filename, '/' . $folder . '/')) {
                 $path .= trim($folder, '/') . '/';
             }
 
@@ -128,7 +128,7 @@ class Locator implements LocatorInterface
      * Scane les namespace definis, retourne une liste de tous les fichiers
      * contenant la sous partie specifiee par $path.
      *
-     * @return string[] Liste des fichiers du chemins
+     * @return list<string> Liste des fichiers du chemins
      */
     public function listFiles(string $path): array
     {
@@ -160,7 +160,7 @@ class Locator implements LocatorInterface
      * Analyse l'espace de noms fourni, renvoyant une liste de tous les fichiers
      * contenus dans le sous-chemin spécifié par $path.
      *
-     * @return string[] Liste des chemins des fichiers
+     * @return list<non-empty-string> Liste des chemins des fichiers
      */
     public function listNamespaceFiles(string $prefix, string $path): array
     {
@@ -299,6 +299,8 @@ class Locator implements LocatorInterface
      *      'app/Modules/foo/Config/Routes.php',
      *      'app/Modules/bar/Config/Routes.php',
      *  ]
+     *
+     * @return list<non-empty-string>
      */
     public function search(string $path, string $ext = 'php', bool $prioritizeApp = true): array
     {
@@ -333,7 +335,7 @@ class Locator implements LocatorInterface
     /**
      * Retourne les namespace mappees qu'on connait
      *
-     * @return array<int, array<string, string>>
+     * @return list<array{prefix: non-empty-string, path: non-empty-string}>
      */
     protected function getNamespaces(): array
     {
@@ -366,12 +368,14 @@ class Locator implements LocatorInterface
      * Vérifie le dossier de l'application pour voir si le fichier peut être trouvé.
      * Uniquement pour une utilisation avec des noms de fichiers qui n'incluent PAS d'espacement de noms.
      *
+     * @param non-empty-string|null $folder
+     * 
      * @return false|string Le chemin d'accès au fichier, ou false s'il n'est pas trouvé.
      */
     protected function legacyLocate(string $file, ?string $folder = null)
     {
         $path = defined('APP_PATH') ? constant('APP_PATH') : '';
-        $path .= (empty($folder) ? $file : $folder . '/' . $file);
+        $path .= $folder === null ? $file : $folder . '/' . $file;
         $path = realpath($path) ?: $path;
 
         if (is_file($path)) {

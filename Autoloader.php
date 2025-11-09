@@ -27,29 +27,28 @@ class Autoloader
     /**
      * Sauvegarde les namespaces comme cle et les chemins correspondants comme valeurs.
      *
-     * @var array<string, string[]>
+     * @var array<non-empty-string, list<non-empty-string>>
      */
     protected array $prefixes = [];
 
     /**
      * Sauvegarde les noms de classes comme cle et les chemins correspondants comme valeurs.
      *
-     * @var array<class-string, string>
+     * @var array<class-string, non-empty-string>
      */
     protected array $classmap = [];
 
     /**
      * Sauvegarde la liste des fichiers.
      *
-     * @var string[]
-     * @phpstan-var list<string>
+     * @var list<non-empty-string>
      */
     protected array $files = [];
 
     /**
      * Constructor.
      *
-     * @param string[] $helpers Sauvegarde la liste des helpers.
+     * @param list<non-empty-string> $helpers Sauvegarde la liste des helpers.
      */
     public function __construct(protected array $config = [], protected array $helpers = [])
     {
@@ -130,6 +129,11 @@ class Autoloader
 
     /**
      * Enregistre le chargeur avec la pile SPL autoloader.
+     * Dans l'ordre suivant:
+     * 
+     * 1. Chargement via la Classmap
+     * 2. Autoloader PSR-4
+     * 3. Fichiers non-classe
      */
     public function register()
     {
@@ -159,7 +163,7 @@ class Autoloader
     /**
      * Enregistre les namespaces avec l'autoloader.
      *
-     * @param array<string, string[]|string>|string $namespace
+     * @param array<non-empty-string, list<non-empty-string>|non-empty-string>|non-empty-string $namespace
      */
     public function addNamespace($namespace, ?string $path = null): self
     {
@@ -188,6 +192,8 @@ class Autoloader
      * Recupere les namespaces avec les prefixes en cles et les chemins en valeurs.
      *
      * Si le parametre prefix et defini, returne seulement le chemin correspondant au prefixe donnee.
+     *
+     * @return ($prefix is null ? array<non-empty-string, list<non-empty-string>> : list<non-empty-string>)
      */
     public function getNamespace(?string $prefix = null): array
     {
@@ -212,6 +218,8 @@ class Autoloader
 
     /**
      * Charge une classe en utilisant le classmap disponible.
+     * 
+     * @param class-string $clas Le nom complet (FQCN) de la classe.
      *
      * @return false|string
      */
@@ -231,7 +239,7 @@ class Autoloader
      *
      * @internal Pour l'utilisation de `spl_autoload_register`.
      *
-     * @param string $class Le nom complet (FQCN) de la calsse.
+     * @param class-string $class Le nom complet (FQCN) de la calsse.
      */
     public function loadClass(string $class): void
     {
@@ -244,16 +252,16 @@ class Autoloader
     public function loadHelpers(): void
     {
         if (function_exists('helper')) {
-            helper($this->helpers);
+            call_user_func('helper', $this->helpers);
         }
     }
 
     /**
      * Charge un fichier a partir du non de classe fourni.
      *
-     * @param string $class Le nom complet (FQCN) de la calsse.
+     * @param class-string $class Le nom complet (FQCN) de la calsse.
      *
-     * @return false|string Le fichier correspondant en cas de succes, ou false en cas d'echec.
+     * @return false|non-empty-string Le fichier correspondant en cas de succes, ou false en cas d'echec.
      */
     protected function loadInNamespace(string $class)
     {
@@ -271,7 +279,7 @@ class Autoloader
                     $filePath = $directory . $relativeClassPath . '.php';
                     $filename = $this->includeFile($filePath);
 
-                    if ($filename) {
+                    if ($filename !== false) {
                         return $filename;
                     }
                 }
@@ -285,7 +293,7 @@ class Autoloader
     /**
      * La zone centrale pour inclure un fichier.
      *
-     * @return false|string Le filename en cas de succes, false si le fichier n'est pas charger
+     * @return false|non-empty-string Le filename en cas de succes, false si le fichier n'est pas charger
      */
     protected function includeFile(string $file)
     {
@@ -298,11 +306,22 @@ class Autoloader
         return false;
     }
 
+    /**
+     * @param array{only?: list<string>, exclude?: list<string>} $composerPackages
+     */
     private function loadComposerNamespaces(ClassLoader $composer, array $composerPackages): void
     {
         $namespacePaths = $composer->getPrefixesPsr4();
 
-        if (! method_exists(InstalledVersions::class, 'getAllRawData')) {
+        $duplicatedNamespaces = ['BlitzPHP', defined('APP_NAMESPACE') ? constant('APP_NAMESPACE') : ''];
+
+        foreach ($duplicatedNamespaces as $ns) {
+            if (isset($namespacePaths[$ns . '\\'])) {
+                unset($namespacePaths[$ns . '\\']);
+            }
+        }
+
+        if (! method_exists(InstalledVersions::class, 'getAllRawData')) { // @phpstan-ignore function.alreadyNarrowedType
             throw new RuntimeException(
                 'Votre version de Composer est trop ancienne.'
                 . ' Veuillez mettre à jour Composer (exécutez `composer self-update`) vers la v2.0.14 ou une version ultérieure'

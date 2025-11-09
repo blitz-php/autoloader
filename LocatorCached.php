@@ -22,13 +22,15 @@ use Psr\SimpleCache\CacheInterface;
 final class LocatorCached implements LocatorInterface
 {
     /**
-     * Donnees mise en cach
+     * Donnees mise en cache
      *
      * [method => data]
      * E.g.,
      * [
      *     'search' => [$path => $foundPaths],
      * ]
+     *
+     * @var array<string, array<string, mixed>>
      */
     private array $cache = [];
 
@@ -113,6 +115,8 @@ final class LocatorCached implements LocatorInterface
 
     /**
      * {@inheritDoc}
+     * 
+     * @return list<non-empty-string>
      */
     public function search(string $path, string $ext = 'php', bool $prioritizeApp = true): array
     {

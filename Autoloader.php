@@ -313,14 +313,6 @@ class Autoloader
     {
         $namespacePaths = $composer->getPrefixesPsr4();
 
-        $duplicatedNamespaces = ['BlitzPHP', defined('APP_NAMESPACE') ? constant('APP_NAMESPACE') : ''];
-
-        foreach ($duplicatedNamespaces as $ns) {
-            if (isset($namespacePaths[$ns . '\\'])) {
-                unset($namespacePaths[$ns . '\\']);
-            }
-        }
-
         if (! method_exists(InstalledVersions::class, 'getAllRawData')) { // @phpstan-ignore function.alreadyNarrowedType
             throw new RuntimeException(
                 'Votre version de Composer est trop ancienne.'

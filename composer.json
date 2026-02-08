@@ -10,8 +10,8 @@
         }
     ],
     "require": {
-        "php": "^8.1",
-        "blitz-php/contracts": "^1.10",
+        "php": "^8.2",
+        "blitz-php/contracts": "^1.14",
         "psr/simple-cache": "^2.0"
     },
     "autoload": {

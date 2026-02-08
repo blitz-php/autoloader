@@ -117,7 +117,7 @@ class Locator implements LocatorInterface
 
             $path .= $filename;
             if (is_file($path)) {
-                return $path;
+                return realpath($path) ?: $path;
             }
         }
 

@@ -167,23 +167,27 @@ class Autoloader
      */
     public function addNamespace($namespace, ?string $path = null): self
     {
-        if (is_array($namespace)) {
-            foreach ($namespace as $prefix => $namespacedPath) {
-                $prefix = trim($prefix, '\\');
+        if (is_string($namespace)) {
+			$namespace = [$namespace => $path];
+		}
 
-                if (is_array($namespacedPath)) {
-                    foreach ($namespacedPath as $dir) {
-                        $this->prefixes[$prefix][] = rtrim($dir, '\\/') . DIRECTORY_SEPARATOR;
-                    }
+        foreach ($namespace as $prefix => $namespacedPath) {
+			$prefix = trim($prefix, '\\');
 
-                    continue;
-                }
+			if (is_array($namespacedPath)) {
+				foreach ($namespacedPath as $dir) {
+					$path                      = rtrim($dir, '\\/') . DIRECTORY_SEPARATOR;
+					$this->prefixes[$prefix][] = realpath($path) ?: $path;
+				}
 
-                $this->prefixes[$prefix][] = rtrim($namespacedPath, '\\/') . DIRECTORY_SEPARATOR;
-            }
-        } else {
-            $this->prefixes[trim($namespace, '\\')][] = rtrim($path, '\\/') . DIRECTORY_SEPARATOR;
-        }
+				continue;
+			}
+
+			$path                      = rtrim($namespacedPath, '\\/') . DIRECTORY_SEPARATOR;
+			$this->prefixes[$prefix][] = realpath($path) ?: $path;
+		}
+
+		$this->prefixes = array_map(fn($prefixes) => array_unique($prefixes), $this->prefixes);
 
         return $this;
     }
